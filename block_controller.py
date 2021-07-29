@@ -157,14 +157,26 @@ class Block_Controller(object):
         BlockMaxY = [0] * width
         holeCandidates = [0] * width
         holeConfirm = [0] * width
+        ##Min height 2
+        HeightY = [0] * width
+        i = 0
+        j = 0
+        MinY = 0
+        MinY2 = 0
 
+        
         ### check board
         # each y line
         for y in range(height - 1, 0, -1):
             hasHole = False
             hasBlock = False
+                
             # each x line
             for x in range(width):
+                ##Diff
+               ## if board[y*self.board_data_width+x] != 0:
+               ##     HeightY[x] = 22-(y-1)
+                
                 ## check if hole or block..
                 if board[y * self.board_data_width + x] == self.ShapeNone_index:
                     # hole
@@ -220,17 +232,47 @@ class Block_Controller(object):
         #    stdDY = math.sqrt(sum([y ** 2 for y in BlockMaxDy]) / len(BlockMaxDy) - (sum(BlockMaxDy) / len(BlockMaxDy)) ** 2)
 
 
+        ##diffH BlockMaxY
+       ## for i in range(width):
+       ##     if(MinY > BlockMaxY[i]):
+       ##         tmp = BlockMaxY[i]
+       ##         MinY = HeightY[i]
+       ##     elif(MinY <= HeightY[i] and MinY2 > HeightY[i]):
+       ##         MinY2 = HeightY[i]
+            BlockMaxY.sort()
+            diffH = BlockMaxY[width-1] - BlockMaxY[0]
+
         # calc Evaluation Value
         score = 0
-        score = score + fullLines * 10.0           # try to delete line 
-        score = score - nHoles * 1.0               # try not to make hole
+        if fullLines >= 4:
+            score = score + fullLines * 10.0
+        elif fullLines == 3:
+            score = score + fullLines * 5.0
+        elif fullLines == 2:
+            score = score + fullLines * 1.0
+        elif fullLines == 1:
+            score = score - fullLines * 5.0           # try to delete line
+
+        ##diffH 
+        if diffH <= 2:
+            score = score + diffH * 0.5
+        elif diffH == 3:
+            score = score + diffH * 1.0
+        elif diffH == 4:
+            score = score + diffH * 2.0
+        elif diffH >= 5:
+            score = score - diffH * 1.0
+       # elif diffH <= 2:
+       #     score = score - diffH * 2.0
+            
+
+        score = score - nHoles * 10.0               # try not to make hole
         score = score - nIsolatedBlocks * 1.0      # try not to make isolated block
         score = score - absDy * 1.0                # try to put block smoothly
         #score = score - maxDy * 0.3                # maxDy
         #score = score - maxHeight * 5              # maxHeight
  #score = score - stdY * 1.0                 # statistical data
         #score = score - stdDY * 0.01               # statistical data
-
         # print(score, fullLines, nHoles, nIsolatedBlocks, maxHeight, stdY, stdDY, absDy, BlockMaxY)
         return score
 
