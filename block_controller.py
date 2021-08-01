@@ -5,6 +5,7 @@ from datetime import datetime
 import pprint
 import copy
 import random
+import math
 
 class Block_Controller(object):
 
@@ -57,8 +58,15 @@ class Block_Controller(object):
                 # get board data, as if dropdown block
                 board = self.getBoard(self.board_backboard, self.CurrentShape_class, direction0, x0)
 
+        ##next
+        #for direction1 in NextShapeDirectionRange:
+        #    x1Min, x1Max = self.getSearchXRange(self.NextShape_class, direction1)
+         #   for x1 in range(x1Min, x1Max):
+          #      board2 = self.getBoard(board, self.NextShape_class, direction1, x1)
+                
                 # evaluate board
-                EvalValue = self.calcEvaluationValueSample(board)
+                EvalValue = self.calcEvaluationValueSample(board,GameStatus)
+                #EvalValue = self.calcEvaluationValueSample(board,board2)
                 # update best move
                 if EvalValue > LatestEvalValue:
                     strategy = (direction0, x0, 1, 1)
@@ -139,7 +147,7 @@ class Block_Controller(object):
             _board[(_y + dy) * self.board_data_width + _x] = Shape_class.shape
         return _board
 
-    def calcEvaluationValueSample(self, board):
+    def calcEvaluationValueSample(self, board,GameStatus):
         #
         # sample function of evaluate board.
         #
@@ -159,12 +167,10 @@ class Block_Controller(object):
         holeConfirm = [0] * width
         ##Min height 2
         HeightY = [0] * width
-        i = 0
-        j = 0
-        MinY = 0
-        MinY2 = 0
+        diffH = 0
+        diffH2 = 0
 
-        
+           
         ### check board
         # each y line
         for y in range(height - 1, 0, -1):
@@ -215,21 +221,21 @@ class Block_Controller(object):
             absDy += abs(x)
 
         #### maxDy
-        #maxDy = max(BlockMaxY) - min(BlockMaxY)
+        maxDy = max(BlockMaxY) - min(BlockMaxY)
         #### maxHeight
-        #maxHeight = max(BlockMaxY) - fullLines
+        maxHeight = max(BlockMaxY) - fullLines
 
         ## statistical data
         #### stdY
-        #if len(BlockMaxY) <= 0:
-        #    stdY = 0
-        #else:
-        #    stdY = math.sqrt(sum([y ** 2 for y in BlockMaxY]) / len(BlockMaxY) - (sum(BlockMaxY) / len(BlockMaxY)) ** 2)
+        if len(BlockMaxY) <= 0:
+            stdY = 0
+        else:
+            stdY = math.sqrt(sum([y ** 2 for y in BlockMaxY]) / len(BlockMaxY) - (sum(BlockMaxY) / len(BlockMaxY)) ** 2)
         #### stdDY
-        #if len(BlockMaxDy) <= 0:
-        #    stdDY = 0
-        #else:
-        #    stdDY = math.sqrt(sum([y ** 2 for y in BlockMaxDy]) / len(BlockMaxDy) - (sum(BlockMaxDy) / len(BlockMaxDy)) ** 2)
+        if len(BlockMaxDy) <= 0:
+            stdDY = 0
+        else:
+            stdDY = math.sqrt(sum([y ** 2 for y in BlockMaxDy]) / len(BlockMaxDy) - (sum(BlockMaxDy) / len(BlockMaxDy)) ** 2)
 
 
         ##diffH BlockMaxY
@@ -241,6 +247,8 @@ class Block_Controller(object):
        ##         MinY2 = HeightY[i]
             BlockMaxY.sort()
             diffH = BlockMaxY[width-1] - BlockMaxY[0]
+            diffH2 = BlockMaxY[width-6] - BlockMaxY[0]
+           #1 diffH2 = BlockMaxY[width-1] - BlockMaxY[width-6]
 
         # calc Evaluation Value
         score = 0
@@ -249,7 +257,7 @@ class Block_Controller(object):
         elif fullLines == 3:
             score = score + fullLines * 5.0
         elif fullLines == 2:
-            score = score + fullLines * 1.0
+            score = score + fullLines * 3.5
         elif fullLines == 1:
             score = score - fullLines * 5.0           # try to delete line
 
@@ -257,22 +265,35 @@ class Block_Controller(object):
         if diffH <= 2:
             score = score + diffH * 0.5
         elif diffH == 3:
-            score = score + diffH * 1.0
+            score = score + diffH * 3.0
         elif diffH == 4:
-            score = score + diffH * 2.0
-        elif diffH >= 5:
+            score = score + diffH * 4.0
+        elif diffH == 5:
+            score = score + diffH * 1.0
+        #elif diffH == 6:
+        #    score = score + diffH * 0.5
+        elif diffH >= 6:
             score = score - diffH * 1.0
-       # elif diffH <= 2:
-       #     score = score - diffH * 2.0
-            
 
-        score = score - nHoles * 10.0               # try not to make hole
-        score = score - nIsolatedBlocks * 1.0      # try not to make isolated block
-        score = score - absDy * 1.0                # try to put block smoothly
-        #score = score - maxDy * 0.3                # maxDy
-        #score = score - maxHeight * 5              # maxHeight
- #score = score - stdY * 1.0                 # statistical data
-        #score = score - stdDY * 0.01               # statistical data
+         ##diffH2 
+        if diffH2 <= 1:
+            score = score + diffH2 * 2.0
+        #elif diffH2 == 2:
+        #    score = score - diffH2 * 0.5
+        elif diffH2 >= 2:
+            score = score - diffH2 * 1.0
+
+        if BlockMaxY[width-1] > 14:
+            score = score - BlockMaxY[width-1]*5.0
+       
+        score = score - nHoles * 10.5              # try not to make hole
+        score = score - nIsolatedBlocks * 1.4      # try not to make isolated block
+        score = score - absDy * 1.0        # try to put block smoothly
+
+        #score = score - maxDy * 2.0                # maxDy
+        #score = score - maxHeight *1.0        # maxHeight
+        #score = score - stdY * 1.0                 # statistical data
+        #score = score - stdDY * 3.0               # statistical data
         # print(score, fullLines, nHoles, nIsolatedBlocks, maxHeight, stdY, stdDY, absDy, BlockMaxY)
         return score
 
